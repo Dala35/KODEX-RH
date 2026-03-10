@@ -31,7 +31,7 @@
   .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
   .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   
-  /* Breakpoints Inteligentes (Desktop First > Mobile) */
+  /* Breakpoints Inteligentes */
   @media (min-width: 768px) {
     .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .md\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -49,7 +49,6 @@
   .font-medium { font-weight: 500; } .font-bold { font-weight: 700; } .font-light { font-weight: 300; } .text-center { text-align: center; } .text-right { text-align: right; }
   .text-muted { color: var(--text-muted); } .text-emerald { color: var(--accent-emerald); } .text-amber { color: var(--accent-amber); } .text-red { color: var(--accent-red); } .text-blue { color: var(--accent-blue); }
 
-  /* Ajustes Tipográficos Mobile */
   @media (max-width: 767px) {
     .text-3xl { font-size: 1.5rem; }
     .text-2xl { font-size: 1.25rem; }
@@ -132,13 +131,35 @@
 
   .task-card { position: relative; overflow: hidden; display: flex; flex-direction: column; }
   .task-indicator { position: absolute; top: 0; left: 0; width: 4px; height: 100%; }
+
+  /* Ecrã de Segurança Global */
+  #kdx-error-screen { display: none; width: 100%; height: 100vh; flex-direction: column; justify-content: center; align-items: center; background: var(--bg-base); color: white; padding: 2rem; text-align: center; position: absolute; z-index: 9999; top: 0; left: 0; }
 </style>
 </head>
 <body>
 
+<!-- Contentor Principal -->
 <div id="app"></div>
 
+<!-- Ecrã de Proteção Máxima (Blindagem contra Tela Preta) -->
+<div id="kdx-error-screen">
+  <div style="color:var(--accent-red); margin-bottom:1rem; transform: scale(1.5);">
+    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+  </div>
+  <h2 style="font-size:1.5rem; margin-bottom:0.5rem; font-weight:bold;">Anomalia de Memória Evitada</h2>
+  <p style="color:var(--text-muted); margin-bottom:2rem; max-width:500px; line-height:1.5;">Ocorreu uma quebra no carregamento dos dados offline. Por segurança, ativamos o protocolo de bloqueio.</p>
+  <button onclick="localStorage.clear(); window.location.reload();" style="background-color:rgba(239, 68, 68, 0.2); color:var(--accent-red); border:1px solid var(--accent-red); padding:1rem 2rem; border-radius:0.5rem; font-size:1rem; cursor:pointer; font-weight:bold; transition: 0.3s;">Limpar Memória e Restaurar</button>
+</div>
+
 <script>
+  // Escudo Global de Erros (Garante que nunca há apenas uma tela preta)
+  window.onerror = function(msg, url, lineNo, columnNo, error) {
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('kdx-error-screen').style.display = 'flex';
+    console.error("KÓDEX Interceção Global:", msg, error);
+    return false;
+  };
+
   // --- ÍCONES SVG (Alta Fidelidade) ---
   const Icons = {
     menu: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>`,
@@ -163,11 +184,18 @@
     alert: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`
   };
 
-  // --- MOTOR DE DADOS OFFLINE (LocalStorage Blindado) ---
+  // --- SANEAMENTO DE DADOS (Impede a Tela Preta) ---
   const sysSetup = {
     users: [{ id: '1', name: 'Administrador de Sistema', role: 'Admin', department: 'Diretoria', position: 'Gestor de Dados', active: true }],
     tasks: [], announcements: [], attendance: [], leaves: []
   };
+
+  function sanitizeArray(arr, fallback) {
+    if (!Array.isArray(arr)) return fallback;
+    // Remove qualquer item nulo, indefinido ou corrompido que cause crashes
+    const limpo = arr.filter(item => item !== null && typeof item === 'object');
+    return limpo.length > 0 ? limpo : fallback;
+  }
 
   function loadData(key, def) {
     try { 
@@ -175,21 +203,22 @@
       if (!res) return def;
       const parsed = JSON.parse(res);
       return parsed !== null ? parsed : def;
-    } 
-    catch(e) { return def; }
+    } catch(e) { 
+      return def; 
+    }
   }
   
   function saveData(key, val) {
     try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
   }
 
-  // Estado Global
+  // Estado Global Purificado
   const state = {
-    users: loadData('afrokodica_offline_users', sysSetup.users) || [],
-    tasks: loadData('afrokodica_offline_tasks', sysSetup.tasks) || [],
-    announcements: loadData('afrokodica_offline_announcements', sysSetup.announcements) || [],
-    attendance: loadData('afrokodica_offline_attendance', sysSetup.attendance) || [],
-    leaves: loadData('afrokodica_offline_leaves', sysSetup.leaves) || [],
+    users: sanitizeArray(loadData('afrokodica_offline_users', sysSetup.users), sysSetup.users),
+    tasks: sanitizeArray(loadData('afrokodica_offline_tasks', sysSetup.tasks), sysSetup.tasks),
+    announcements: sanitizeArray(loadData('afrokodica_offline_announcements', sysSetup.announcements), sysSetup.announcements),
+    attendance: sanitizeArray(loadData('afrokodica_offline_attendance', sysSetup.attendance), sysSetup.attendance),
+    leaves: sanitizeArray(loadData('afrokodica_offline_leaves', sysSetup.leaves), sysSetup.leaves),
     currentUser: null,
     activeTab: 'dashboard',
     filterTasks: 'Todas',
@@ -199,13 +228,6 @@
     isAddingLeave: false,
     isAddingUser: false
   };
-
-  // Protocolo de Reparação Automática
-  if (!Array.isArray(state.users)) state.users = sysSetup.users;
-  if (!Array.isArray(state.tasks)) state.tasks = sysSetup.tasks;
-  if (!Array.isArray(state.announcements)) state.announcements = sysSetup.announcements;
-  if (!Array.isArray(state.attendance)) state.attendance = sysSetup.attendance;
-  if (!Array.isArray(state.leaves)) state.leaves = sysSetup.leaves;
 
   function updateState(key, val, saveKey) {
     state[key] = val;
@@ -229,7 +251,7 @@
       e.preventDefault();
       const id = document.getElementById('loginSelect').value;
       if(!id) return;
-      state.currentUser = state.users.find(u => u.id === id);
+      state.currentUser = state.users.find(u => u && u.id === id);
       state.activeTab = 'dashboard';
       renderApp();
     },
@@ -284,4 +306,482 @@
       const today = new Date().toISOString().split('T')[0];
       const time = new Date().toLocaleTimeString('pt-PT', { hour:'2-digit', minute:'2-digit' });
       const updated = state.attendance.map(a => (a.userId===state.currentUser.id && a.date===today && !a.checkOut) ? {...a, checkOut: time} : a);
- 
+      updateState('attendance', updated, 'afrokodica_offline_attendance');
+    },
+    filterAtt: (e) => { state.filterAttDate = e.target.value; renderApp(); },
+
+    // Licenças
+    toggleFormLeave: () => { state.isAddingLeave = !state.isAddingLeave; renderApp(); },
+    addLeave: (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const req = { id: Date.now().toString(), userId: state.currentUser.id, type: fd.get('type'), reason: fd.get('reason'), startDate: fd.get('start'), endDate: fd.get('end'), status: 'Pendente', requestedAt: new Date().toISOString() };
+      updateState('leaves', [...state.leaves, req], 'afrokodica_offline_leaves');
+      state.isAddingLeave = false; renderApp();
+    },
+    updLeave: (id, st) => { updateState('leaves', state.leaves.map(l=>l.id===id?{...l,status:st}:l), 'afrokodica_offline_leaves'); },
+
+    // RH
+    toggleFormUser: () => { state.isAddingUser = !state.isAddingUser; renderApp(); },
+    addUser: (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const usr = { id: Date.now().toString(), name: fd.get('name'), position: fd.get('pos'), department: fd.get('dep'), role: fd.get('role'), active: true };
+      updateState('users', [...state.users, usr], 'afrokodica_offline_users');
+      state.isAddingUser = false; renderApp();
+    },
+    togUser: (id) => { updateState('users', state.users.map(u=>u.id===id?{...u,active:!u.active}:u), 'afrokodica_offline_users'); },
+
+    // Sistema
+    exportDB: () => {
+      const data = { users: state.users, tasks: state.tasks, announcements: state.announcements, attendance: state.attendance, leaves: state.leaves, timestamp: new Date().toISOString(), v: '4.0-Blindado' };
+      const str = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+      const a = document.createElement('a'); a.href = str; a.download = `KODEX_Backup_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+    },
+    importDB: (e) => {
+      const file = e.target.files[0]; if(!file) return;
+      if(!confirm("Atenção: Substituir todos os dados locais?")) { e.target.value = ''; return; }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const d = JSON.parse(ev.target.result);
+          if(d.users) updateState('users', sanitizeArray(d.users, state.users), 'afrokodica_offline_users');
+          if(d.tasks) updateState('tasks', sanitizeArray(d.tasks, state.tasks), 'afrokodica_offline_tasks');
+          if(d.announcements) updateState('announcements', sanitizeArray(d.announcements, state.announcements), 'afrokodica_offline_announcements');
+          if(d.attendance) updateState('attendance', sanitizeArray(d.attendance, state.attendance), 'afrokodica_offline_attendance');
+          if(d.leaves) updateState('leaves', sanitizeArray(d.leaves, state.leaves), 'afrokodica_offline_leaves');
+          alert("Restauro Concluído!");
+        } catch(err) { alert("Ficheiro inválido."); }
+        e.target.value = '';
+      };
+      reader.readAsText(file);
+    },
+    wipeDB: () => {
+      if(confirm("PERIGO: Apagar máquina?") && prompt("Digite APAGAR") === 'APAGAR') {
+        kdx.emergencyWipe();
+      }
+    }
+  };
+
+  function resetForms() { state.isAddingTask=false; state.isAddingAnn=false; state.isAddingLeave=false; state.isAddingUser=false; }
+
+  // --- RENDERIZADORES DE VISTAS (Blindados contra nulos) ---
+  
+  function renderLogin() {
+    const opts = state.users.filter(u => u && u.active).map(u => `<option value="${u.id}">${u.name || 'Usuário'} (${u.department || 'Geral'})</option>`).join('');
+    return `
+      <div style="width:100%; height:100%; display:flex; justify-content:center; align-items:center; position:relative; padding:1rem;">
+        <div style="position:absolute; top:10%; left:20%; width:30%; height:30%; background:var(--accent-emerald); border-radius:50%; filter:blur(150px); opacity:0.1; z-index:0;"></div>
+        <div class="bg-surface border rounded-2xl p-6 md:p-8 shadow" style="width:100%; max-width:400px; z-index:1;">
+          <div class="flex justify-center mb-6">${Icons.shield}</div>
+          <h2 class="text-2xl font-bold text-center mb-2">Acesso Restrito</h2>
+          <p class="text-center text-muted text-sm mb-8">KÓDEX Offline Terminal</p>
+          <form onsubmit="kdx.login(event)" class="flex flex-col gap-6">
+            <div>
+              <label class="input-label">Identificação do Servidor</label>
+              <select id="loginSelect" class="input-field" required style="cursor:pointer;">
+                <option value="" disabled selected>Selecione o seu perfil...</option>
+                ${opts}
+              </select>
+            </div>
+            <button type="submit" class="btn btn-emerald" style="width:100%; padding:0.75rem;">${Icons.lock} Aceder ao Terminal</button>
+          </form>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderSidebar() {
+    if (!state.currentUser) return '';
+    const isAdmin = state.currentUser.role === 'Admin';
+    const navs = [
+      { id: 'dashboard', label: 'Dashboard', icon: Icons.dashboard },
+      { id: 'mural', label: 'Mural Institucional', icon: Icons.megaphone },
+      { id: 'tasks', label: 'Tarefas', icon: Icons.checkSquare },
+      { id: 'attendance', label: 'Assiduidade', icon: Icons.fingerprint },
+      { id: 'leaves', label: 'Licenças', icon: Icons.calendarRange },
+      ...(isAdmin ? [{ id: 'hr', label: 'Recursos Humanos', icon: Icons.users }, { id: 'system', label: 'Cofre de Dados', icon: Icons.database }] : [])
+    ];
+    
+    const navHTML = navs.map(n => `
+      <button onclick="kdx.nav('${n.id}')" class="nav-item ${state.activeTab === n.id ? 'active' : ''}">
+        ${n.icon} ${n.label}
+      </button>
+    `).join('');
+
+    const uName = state.currentUser.name || 'Utilizador';
+    const uChar = uName.charAt(0) || 'U';
+
+    return `
+      <div class="overlay" id="kdx-overlay" onclick="kdx.toggleSidebar()"></div>
+      <aside class="sidebar" id="kdx-sidebar">
+        <div class="p-6 border-b flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div style="width:40px;height:40px;border-radius:0.5rem;background:rgba(16,185,129,0.1);color:var(--accent-emerald);display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1.25rem;border:1px solid rgba(16,185,129,0.2);flex-shrink:0;">K</div>
+            <div><h2 class="font-bold">KÓDEX HR</h2><p class="text-xs text-emerald">Offline Edition</p></div>
+          </div>
+        </div>
+        <nav style="flex:1; padding:1.5rem 0.75rem; overflow-y:auto; display:flex; flex-direction:column; gap:0.25rem;">${navHTML}</nav>
+        <div class="p-4 border-t mt-auto">
+          <div class="flex items-center gap-3 mb-4 px-2">
+            <div style="width:40px;height:40px;border-radius:50%;background:var(--bg-elevated);color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;border:1px solid var(--border);flex-shrink:0;">${uChar}</div>
+            <div style="overflow:hidden;"><p class="text-sm font-medium" style="white-space:nowrap;text-overflow:ellipsis;">${uName}</p><p class="text-xs text-muted">${state.currentUser.role || 'Geral'}</p></div>
+          </div>
+          <button onclick="kdx.logout()" class="btn btn-danger" style="width:100%;">${Icons.logout} Encerrar Sessão</button>
+        </div>
+      </aside>
+    `;
+  }
+
+  function renderHeader() {
+    const titles = { dashboard:'Visão Global Operacional', mural:'Mural de Sincronia', tasks:'Evolução de Tarefas', attendance:'Registo de Presença', leaves:'Gestão de Ciclos', hr:'Gestão de Talentos (RH)', system:'Cofre de Segurança' };
+    return `
+      <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-8 gap-4 fade-in">
+        <div class="flex items-center gap-3 w-full md:w-auto">
+          <button onclick="kdx.toggleSidebar()" class="btn btn-ghost md:hidden" style="padding:0.4rem; margin-left:-0.5rem;">${Icons.menu}</button>
+          <div>
+            <h1 class="text-2xl md:text-3xl font-light leading-tight">${titles[state.activeTab] || 'Módulo'}</h1>
+            <p class="text-sm text-muted mt-1 flex items-center gap-2">${Icons.lock} Terminal Offline Seguro</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3 border rounded-full px-4 py-2 bg-surface self-start md:self-auto" style="border-color:rgba(16,185,129,0.2);">
+          <div class="pulse-dot"></div><span class="text-xs md:text-sm font-medium text-emerald">Rede Isolada</span>
+        </div>
+      </header>
+    `;
+  }
+
+  function renderDashboard() {
+    const today = new Date().toISOString().split('T')[0];
+    const myTasks = state.tasks.filter(t => t && t.assignedTo === state.currentUser.id && t.status === 'Pendente').length;
+    const present = new Set(state.attendance.filter(a => a && a.date === today).map(a => a.userId)).size;
+    const activeU = state.users.filter(u => u && u.active).length;
+    
+    const acts = state.tasks.slice().reverse().slice(0,4).map(t => {
+      if(!t) return '';
+      return `
+      <div class="flex flex-col sm:flex-row justify-between sm:items-center p-3 bg-base border rounded-xl gap-2">
+        <div style="overflow:hidden; padding-right:1rem;"><p class="font-medium text-sm" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.title || 'Sem título'}</p></div>
+        <span class="badge self-start sm:self-auto ${t.status==='Concluída'?'badge-emerald':'badge-amber'}">${t.status || 'Pendente'}</span>
+      </div>
+    `}).join('') || '<p class="text-muted text-sm">Sem registos operacionais.</p>';
+
+    const anns = state.announcements.slice(0,2).map(a => {
+      if(!a) return '';
+      return `
+      <div class="p-4 bg-base border rounded-xl" style="border-left:4px solid var(--accent-amber);">
+        <h4 class="font-medium text-sm mb-1">${a.title || 'Aviso'}</h4>
+        <p class="text-muted text-xs mb-2" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${a.content || ''}</p>
+        <div class="text-right text-xs text-muted">${a.createdAt ? new Date(a.createdAt).toLocaleDateString() : 'Data oculta'}</div>
+      </div>
+    `}).join('') || '<p class="text-muted text-sm">Mural limpo.</p>';
+
+    return `
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6 fade-in">
+        <div class="bg-surface border rounded-2xl p-5 md:p-6 flex items-center gap-4"><div class="p-3 rounded-xl badge-amber">${Icons.clock}</div><div><p class="text-sm text-muted">Pendentes</p><p class="text-2xl font-bold">${myTasks}</p></div></div>
+        <div class="bg-surface border rounded-2xl p-5 md:p-6 flex items-center gap-4"><div class="p-3 rounded-xl badge-blue">${Icons.fingerprint}</div><div><p class="text-sm text-muted">Presenças Hoje</p><p class="text-2xl font-bold">${present} / ${activeU}</p></div></div>
+        ${state.currentUser.role === 'Admin' ? `<div class="bg-surface border rounded-2xl p-5 md:p-6 flex items-center gap-4"><div class="p-3 rounded-xl badge-emerald">${Icons.users}</div><div><p class="text-sm text-muted">Ativos</p><p class="text-2xl font-bold">${activeU}</p></div></div>` : ''}
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 fade-in">
+        <div class="bg-surface border rounded-2xl p-5 md:p-6"><h3 class="font-medium mb-4 flex items-center gap-2"><span class="text-emerald">${Icons.activity}</span> Atividade</h3><div class="flex flex-col gap-3">${acts}</div></div>
+        <div class="bg-surface border rounded-2xl p-5 md:p-6"><h3 class="font-medium mb-4 flex items-center gap-2"><span class="text-amber">${Icons.bell}</span> Avisos</h3><div class="flex flex-col gap-3">${anns}</div></div>
+      </div>
+    `;
+  }
+
+  function renderMural() {
+    const list = state.announcements.map(a => {
+      if(!a) return '';
+      return `
+      <div class="bg-surface border rounded-xl p-5 md:p-6 relative mb-4">
+        ${state.currentUser.role==='Admin' ? `<button onclick="kdx.delAnn('${a.id}')" class="btn-ghost" style="position:absolute;top:1rem;right:1rem;">${Icons.trash}</button>` : ''}
+        <h3 class="text-lg md:text-xl font-medium mb-2 pr-8">${a.title || 'Comunicado'}</h3>
+        <p class="text-sm text-muted mb-4" style="white-space:pre-wrap; line-height:1.6;">${a.content || ''}</p>
+        <div class="border-t pt-3 flex flex-wrap gap-2 text-xs text-muted"><span class="font-medium text-main">${a.authorName || 'Autor'}</span> &bull; <span>${a.createdAt ? new Date(a.createdAt).toLocaleString() : ''}</span></div>
+      </div>
+    `}).join('') || '<div class="text-center p-8 text-muted border rounded-xl border-dashed">Mural vazio. Nenhum comunicado no momento.</div>';
+
+    const form = state.isAddingAnn ? `
+      <form onsubmit="kdx.addAnn(event)" class="bg-surface border rounded-xl p-5 md:p-6 mb-6 fade-in">
+        <h3 class="font-medium mb-4">Novo Comunicado</h3>
+        <div class="grid grid-cols-1 gap-4 mb-4">
+          <div><label class="input-label">Título</label><input name="title" required class="input-field"></div>
+          <div><label class="input-label">Mensagem</label><textarea name="content" required rows="4" class="input-field"></textarea></div>
+        </div>
+        <div class="flex flex-wrap justify-end gap-3 mt-4"><button type="button" onclick="kdx.toggleFormAnn()" class="btn btn-ghost w-full sm:w-auto">Cancelar</button><button type="submit" class="btn btn-emerald w-full sm:w-auto">Publicar</button></div>
+      </form>
+    ` : '';
+
+    return `
+      <div class="fade-in">
+        ${state.currentUser.role === 'Admin' ? `<div class="flex justify-end mb-4"><button onclick="kdx.toggleFormAnn()" class="btn btn-emerald w-full sm:w-auto">${Icons.plus} Publicar</button></div>` : ''}
+        ${form}
+        ${list}
+      </div>
+    `;
+  }
+
+  function renderTasks() {
+    let tList = state.tasks;
+    if(state.filterTasks==='Minhas') tList = tList.filter(t => t && t.assignedTo === state.currentUser.id);
+    tList = tList.sort((a,b)=>new Date(b.createdAt || 0)-new Date(a.createdAt || 0));
+
+    const htmlList = tList.map(t => {
+      if(!t) return '';
+      const u = state.users.find(x => x && x.id === t.assignedTo);
+      return `
+      <div class="task-card bg-surface border rounded-xl p-5 shadow-sm">
+        <div class="task-indicator ${t.priority==='Urgente'?'bg-red':'bg-emerald'}" style="background-color: var(--accent-${t.priority==='Urgente'?'red':'emerald'});"></div>
+        <div class="flex justify-between items-start mb-3 pl-3">
+          <span class="badge ${t.priority==='Urgente'?'badge-red':'badge-emerald'}">${t.priority || 'Normal'}</span>
+          ${(state.currentUser.role==='Admin' || t.createdBy===state.currentUser.id) ? `<button onclick="kdx.delTask('${t.id}')" class="btn-ghost" style="padding:0;">${Icons.trash}</button>`:''}
+        </div>
+        <h4 class="font-medium mb-2 pl-3 text-lg leading-tight">${t.title || 'Tarefa'}</h4>
+        <p class="text-sm text-muted mb-4 pl-3" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${t.description || ''}</p>
+        <div class="border-t pt-4 mt-auto flex justify-between items-center pl-3">
+          <span class="text-xs text-muted flex items-center gap-1">${Icons.users} <span style="max-width:80px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u?u.name:'N/A'}</span></span>
+          <button onclick="kdx.toggleTaskStatus('${t.id}')" class="badge ${t.status==='Concluída'?'badge-emerald':'bg-elevated text-main border-none'}" style="cursor:pointer;">${t.status || 'Pendente'}</button>
+        </div>
+      </div>`
+    }).join('') || '<div style="grid-column:1/-1" class="text-center p-8 text-muted border rounded-xl border-dashed">Nenhuma tarefa encontrada.</div>';
+
+    const form = state.isAddingTask ? `
+      <form onsubmit="kdx.addTask(event)" class="bg-surface border rounded-xl p-5 md:p-6 mb-6 fade-in">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div class="md:col-span-2"><label class="input-label">Título</label><input name="title" required class="input-field"></div>
+          <div class="md:col-span-2"><label class="input-label">Detalhes</label><textarea name="desc" required class="input-field h-24"></textarea></div>
+          <div><label class="input-label">Prioridade</label><select name="priority" class="input-field"><option>Normal</option><option>Urgente</option></select></div>
+          <div><label class="input-label">Atribuir a</label><select name="assigned" ${state.currentUser.role!=='Admin'?'disabled':''} class="input-field"><option value="${state.currentUser.id}">A mim</option>${state.users.filter(u=>u && u.id!==state.currentUser.id && u.active).map(u=>`<option value="${u.id}">${u.name}</option>`).join('')}</select></div>
+        </div>
+        <div class="flex flex-wrap justify-end gap-3"><button type="button" onclick="kdx.toggleFormTask()" class="btn btn-ghost w-full sm:w-auto">Cancelar</button><button type="submit" class="btn btn-emerald w-full sm:w-auto">Guardar Tarefa</button></div>
+      </form>
+    ` : '';
+
+    return `
+      <div class="fade-in">
+        <div class="bg-surface border rounded-xl p-3 md:p-4 flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+          <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+            <button onclick="kdx.setTaskFilter('Todas')" class="btn ${state.filterTasks==='Todas'?'badge-emerald':'btn-ghost'} flex-1 sm:flex-none">Todas</button>
+            <button onclick="kdx.setTaskFilter('Minhas')" class="btn ${state.filterTasks==='Minhas'?'badge-emerald':'btn-ghost'} flex-1 sm:flex-none">Minhas</button>
+          </div>
+          <button onclick="kdx.toggleFormTask()" class="btn btn-emerald w-full sm:w-auto">${Icons.plus} Nova Tarefa</button>
+        </div>
+        ${form}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">${htmlList}</div>
+      </div>
+    `;
+  }
+
+  function renderAttendance() {
+    const today = new Date().toISOString().split('T')[0];
+    const myRec = state.attendance.find(a => a && a.userId===state.currentUser.id && a.date===today);
+    
+    let adminTbl = '';
+    if(state.currentUser.role==='Admin') {
+      const daily = state.attendance.filter(a => a && a.date===state.filterAttDate);
+      const rows = state.users.filter(u => u && u.active).map(u => {
+        const r = daily.find(a => a && a.userId===u.id);
+        const st = !r ? '<span class="badge badge-red">Ausente</span>' : (!r.checkOut ? '<span class="badge badge-emerald">Presente</span>' : '<span class="badge" style="background:var(--bg-elevated);">Concluído</span>');
+        return `<tr><td>${u.name || 'Desconhecido'}</td><td>${r?r.checkIn:'-'}</td><td>${r&&r.checkOut?r.checkOut:'-'}</td><td>${st}</td></tr>`;
+      }).join('');
+      adminTbl = `
+        <div class="bg-surface border rounded-xl overflow-hidden mt-8">
+          <div class="p-4 border-b flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-base">
+            <h3 class="font-medium">Relatório Geral da Equipa</h3>
+            <input type="date" value="${state.filterAttDate}" onchange="kdx.filterAtt(event)" class="input-field" style="width:auto; padding:0.4rem;">
+          </div>
+          <div class="table-responsive">
+            <table><thead><tr><th>Funcionário</th><th>Entrada</th><th>Saída</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>
+          </div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="fade-in">
+        <div class="bg-surface border rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center text-center">
+          <div style="color:var(--${myRec&&!myRec.checkOut?'accent-emerald':'text-muted'}); margin-bottom:1.5rem; transform: scale(1.5);">
+            ${Icons.fingerprint}
+          </div>
+          <h2 class="text-xl md:text-2xl font-medium mb-2">Terminal Presencial</h2>
+          <p class="text-muted mb-8 text-sm md:text-base">${new Date().toLocaleDateString('pt-PT')}</p>
+          <div class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+            <button onclick="kdx.checkIn()" ${myRec?'disabled':''} class="btn ${myRec?'btn-outline':'btn-emerald'} w-full sm:w-auto" style="padding:0.75rem 2rem;">Registar Entrada</button>
+            <button onclick="kdx.checkOut()" ${(!myRec||myRec.checkOut)?'disabled':''} class="btn ${(!myRec||myRec.checkOut)?'btn-outline':'btn-amber'} w-full sm:w-auto" style="padding:0.75rem 2rem;">Registar Saída</button>
+          </div>
+          ${myRec ? `<div class="mt-6 badge badge-emerald" style="padding:0.6rem 1rem; font-size:0.8rem; text-transform:none;">Entrada validada às ${myRec.checkIn} ${myRec.checkOut?'<br class="sm:hidden">| Saída validada às '+myRec.checkOut:''}</div>` : ''}
+        </div>
+        ${adminTbl}
+      </div>
+    `;
+  }
+
+  function renderLeaves() {
+    const list = (state.currentUser.role==='Admin' ? state.leaves : state.leaves.filter(l => l && l.userId===state.currentUser.id))
+      .filter(l => l != null)
+      .sort((a,b)=>new Date(b.requestedAt || 0)-new Date(a.requestedAt || 0));
+    
+    const rows = list.map(l => {
+      const u = state.users.find(x => x && x.id===l.userId);
+      const stClass = l.status==='Aprovado'?'badge-emerald':l.status==='Rejeitado'?'badge-red':'badge-amber';
+      return `<tr>
+        ${state.currentUser.role==='Admin'?`<td>${u?u.name:'-'}</td>`:''}
+        <td><div class="font-medium">${l.type || '-'}</div><div class="text-xs text-muted max-w-[150px] overflow-hidden text-ellipsis whitespace-nowrap" title="${l.reason || ''}">${l.reason || ''}</div></td>
+        <td style="white-space:nowrap;">${l.startDate || '-'} a ${l.endDate || '-'}</td>
+        <td><span class="badge ${stClass}">${l.status || 'Pendente'}</span></td>
+        ${state.currentUser.role==='Admin'?`<td class="text-right" style="white-space:nowrap;">${l.status==='Pendente'?`<button onclick="kdx.updLeave('${l.id}','Aprovado')" class="badge badge-emerald" style="border:none;cursor:pointer;margin-right:4px;">Aprovar</button><button onclick="kdx.updLeave('${l.id}','Rejeitado')" class="badge badge-red" style="border:none;cursor:pointer;">Rejeitar</button>`:''}</td>`:''}
+      </tr>`;
+    }).join('') || `<tr><td colspan="5" class="text-center p-8 text-muted">Nenhum registo de licença.</td></tr>`;
+
+    const form = state.isAddingLeave ? `
+      <form onsubmit="kdx.addLeave(event)" class="bg-surface border rounded-xl p-5 md:p-6 mb-6 fade-in">
+        <h3 class="font-medium mb-4">Requerimento de Ausência</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div><label class="input-label">Tipo de Licença</label><select name="type" class="input-field"><option>Férias Anuais</option><option>Licença Médica</option><option>Justificação Pontual</option><option>Luto</option></select></div>
+          <div><label class="input-label">Motivo Resumido</label><input name="reason" required class="input-field"></div>
+          <div><label class="input-label">Data de Início</label><input type="date" name="start" required class="input-field"></div>
+          <div><label class="input-label">Data de Término</label><input type="date" name="end" required class="input-field"></div>
+        </div>
+        <div class="flex flex-wrap justify-end gap-3 mt-4"><button type="button" onclick="kdx.toggleFormLeave()" class="btn btn-ghost w-full sm:w-auto">Cancelar</button><button type="submit" class="btn btn-emerald w-full sm:w-auto">Submeter Pedido</button></div>
+      </form>
+    ` : '';
+
+    return `
+      <div class="fade-in">
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center bg-surface p-4 rounded-xl border mb-6 gap-4">
+          <h3 class="font-medium">Histórico de Pedidos</h3>
+          <button onclick="kdx.toggleFormLeave()" class="btn btn-emerald w-full sm:w-auto">${Icons.plus} Solicitar Licença</button>
+        </div>
+        ${form}
+        <div class="bg-surface border rounded-xl overflow-hidden">
+          <div class="table-responsive">
+            <table><thead><tr>${state.currentUser.role==='Admin'?'<th>Requerente</th>':''}<th>Tipo/Motivo</th><th>Período</th><th>Estado</th>${state.currentUser.role==='Admin'?'<th class="text-right">Ação</th>':''}</tr></thead><tbody>${rows}</tbody></table>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderHR() {
+    if(state.currentUser.role!=='Admin') return '';
+    const form = state.isAddingUser ? `
+      <form onsubmit="kdx.addUser(event)" class="bg-surface border rounded-xl p-5 md:p-6 mb-6 fade-in">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div><label class="input-label">Nome Completo</label><input name="name" required class="input-field"></div>
+          <div><label class="input-label">Cargo / Posição</label><input name="pos" required class="input-field"></div>
+          <div><label class="input-label">Departamento</label><input name="dep" required class="input-field"></div>
+          <div><label class="input-label">Nível de Acesso</label><select name="role" class="input-field"><option value="Employee">Utilizador Padrão</option><option value="Admin">Administrador (Total)</option></select></div>
+        </div>
+        <div class="flex flex-wrap justify-end gap-3 mt-4"><button type="button" onclick="kdx.toggleFormUser()" class="btn btn-ghost w-full sm:w-auto">Cancelar</button><button type="submit" class="btn btn-emerald w-full sm:w-auto">Salvar Registo</button></div>
+      </form>
+    ` : '';
+
+    const rows = state.users.map(u => {
+      if(!u) return '';
+      return `
+      <tr>
+        <td style="white-space:nowrap;"><div class="font-medium ${!u.active?'text-muted':''}">${u.name || '-'}</div><div class="text-xs text-muted">${u.position || '-'}</div></td>
+        <td style="white-space:nowrap;">${u.department || '-'}</td>
+        <td><span class="badge ${u.role==='Admin'?'badge-amber':'badge-blue'}">${u.role || 'Employee'}</span></td>
+        <td>${u.active?'<span class="text-emerald text-xs font-medium">&bull; Ativo</span>':'<span class="text-red text-xs font-medium">&bull; Inativo</span>'}</td>
+        <td class="text-right"><button onclick="kdx.togUser('${u.id}')" ${u.id===state.currentUser.id?'disabled':''} class="btn btn-outline" style="padding:0.35rem 0.6rem; font-size:0.75rem;">${u.active?'Suspender':'Ativar'}</button></td>
+      </tr>
+    `}).join('');
+
+    return `
+      <div class="fade-in">
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center bg-surface p-4 rounded-xl border mb-6 gap-4">
+          <div class="text-sm font-medium">Servidores Ativos: <span class="text-emerald">${state.users.filter(u=>u && u.active).length}</span></div>
+          <button onclick="kdx.toggleFormUser()" class="btn btn-emerald w-full sm:w-auto">${Icons.userPlus} Novo Funcionário</button>
+        </div>
+        ${form}
+        <div class="bg-surface border rounded-xl overflow-hidden">
+          <div class="table-responsive">
+            <table><thead><tr><th>Nome</th><th>Departamento</th><th>Acesso</th><th>Status</th><th class="text-right">Ação</th></tr></thead><tbody>${rows}</tbody></table>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderSystem() {
+    if(state.currentUser.role!=='Admin') return '';
+    return `
+      <div class="bg-surface border rounded-2xl p-5 md:p-8 fade-in">
+        <h2 class="text-xl md:text-2xl font-medium mb-6 flex items-center gap-2"><span class="text-emerald">${Icons.database}</span> Cofre de Dados Offline</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-8">
+          <button onclick="kdx.exportDB()" class="bg-base border rounded-xl p-6 text-left" style="cursor:pointer; transition:0.2s;">
+            <div class="text-blue mb-3 transform scale-125 origin-left">${Icons.download}</div>
+            <h3 class="font-medium mb-1">Transferir Backup (PEN Drive)</h3><p class="text-sm text-muted">Gera um ficheiro codificado com todos os dados atualizados.</p>
+          </button>
+          <button onclick="document.getElementById('importFile').click()" class="bg-base border rounded-xl p-6 text-left" style="cursor:pointer; transition:0.2s;">
+            <div class="text-amber mb-3 transform scale-125 origin-left">${Icons.upload}</div>
+            <h3 class="font-medium mb-1">Restaurar Ficheiro</h3><p class="text-sm text-muted">Substitui os dados locais pela base importada.</p>
+            <input type="file" id="importFile" accept=".json" style="display:none;" onchange="kdx.importDB(event)">
+          </button>
+        </div>
+        <div class="border-t pt-6 mt-4">
+          <div class="flex flex-col md:flex-row justify-between md:items-center bg-base border rounded-xl p-5 md:p-6 gap-4" style="border-color:rgba(239,68,68,0.3);">
+            <div><h3 class="text-red font-medium flex items-center gap-2 mb-1">${Icons.alert} Protocolo de Formatação</h3><p class="text-sm text-muted">Apaga fisicamente todos os registos do disco desta máquina.</p></div>
+            <button onclick="kdx.wipeDB()" class="btn btn-danger w-full md:w-auto px-6 py-3">Limpar Máquina</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // --- O NÚCLEO DE RENDERIZAÇÃO ---
+  function renderApp() {
+    try {
+      const root = document.getElementById('app');
+      
+      // Se não há utilizador logado, desenha ecrã seguro
+      if(!state.currentUser) { 
+        root.innerHTML = renderLogin(); 
+        return; 
+      }
+
+      // Resolve a vista solicitada
+      let view = '';
+      switch(state.activeTab) {
+        case 'dashboard': view = renderDashboard(); break;
+        case 'mural': view = renderMural(); break;
+        case 'tasks': view = renderTasks(); break;
+        case 'attendance': view = renderAttendance(); break;
+        case 'leaves': view = renderLeaves(); break;
+        case 'hr': view = renderHR(); break;
+        case 'system': view = renderSystem(); break;
+        default: view = renderDashboard();
+      }
+
+      // Aplica a interface principal
+      root.innerHTML = `
+        ${renderSidebar()}
+        <main class="main-content">
+          ${renderHeader()}
+          ${view}
+        </main>
+      `;
+
+      // Se havia um ecrã de erro visível, oculta-o e certifica-se de que o #app volta a aparecer
+      document.getElementById('kdx-error-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
+
+    } catch (error) {
+      // Engatilha o protocolo anti-colapso se o DOM render falhar
+      console.error("KÓDEX Erro de Renderização Detetado:", error);
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('kdx-error-screen').style.display = 'flex';
+    }
+  }
+
+  // Arranque Segurado
+  window.onload = () => {
+    renderApp();
+  };
+</script>
+</body>
+</html>
+
+
