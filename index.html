@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KÓDEX Sinergia - Terminal Offline</title>
+<style>
+  /* --- MOTOR DE ESTILO NATIVO (Alta Fidelidade Afrokódica) --- */
+  :root {
+    --bg-base: #020617; /* slate-950 */
+    --bg-surface: #0f172a; /* slate-900 */
+    --bg-elevated: #1e293b; /* slate-800 */
+    --border: #334155; /* slate-700 */
+    --text-main: #f8fafc; /* slate-50 */
+    --text-muted: #94a3b8; /* slate-400 */
+    --accent-emerald: #10b981; /* emerald-500 */
+    --accent-emerald-hover: #059669; /* emerald-600 */
+    --accent-amber: #f59e0b; /* amber-500 */
+    --accent-red: #ef4444; /* red-500 */
+    --accent-blue: #3b82f6; /* blue-500 */
+    --font-family: system-ui, -apple-system, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background-color: var(--bg-base); color: var(--text-main); font-family: var(--font-family); height: 100vh; display: flex; overflow: hidden; }
+  
+  /* Utilitários Flex e Grid */
+  .flex { display: flex; } .flex-col { flex-direction: column; } .items-center { align-items: center; } .justify-between { justify-content: space-between; } .justify-center { justify-content: center; } .justify-end { justify-content: flex-end; } .gap-2 { gap: 0.5rem; } .gap-3 { gap: 0.75rem; } .gap-4 { gap: 1rem; } .gap-6 { gap: 1.5rem; }
+  .grid { display: grid; } .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); } .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  @media (max-width: 1024px) { .lg\:grid-cols-2 { grid-template-columns: repeat(1, minmax(0, 1fr)); } .lg\:grid-cols-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 768px) { .md\:grid-cols-2, .md\:grid-cols-3 { grid-template-columns: repeat(1, minmax(0, 1fr)); } .md\:col-span-2 { grid-column: span 1 / span 1; } }
+  .md\:col-span-2 { grid-column: span 2 / span 2; }
+
+  /* Espaçamentos e Textos */
+  .p-4 { padding: 1rem; } .p-6 { padding: 1.5rem; } .p-8 { padding: 2rem; } .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; } .px-4 { padding-left: 1rem; padding-right: 1rem; } .mb-2 { margin-bottom: 0.5rem; } .mb-4 { margin-bottom: 1rem; } .mb-6 { margin-bottom: 1.5rem; } .mb-8 { margin-bottom: 2rem; } .mt-4 { margin-top: 1rem; } .mt-8 { margin-top: 2rem; }
+  .text-xs { font-size: 0.75rem; } .text-sm { font-size: 0.875rem; } .text-base { font-size: 1rem; } .text-lg { font-size: 1.125rem; } .text-xl { font-size: 1.25rem; } .text-2xl { font-size: 1.5rem; } .text-3xl { font-size: 1.875rem; }
+  .font-medium { font-weight: 500; } .font-bold { font-weight: 700; } .text-center { text-align: center; } .text-right { text-align: right; }
+  .text-muted { color: var(--text-muted); } .text-emerald { color: var(--accent-emerald); } .text-amber { color: var(--accent-amber); } .text-red { color: var(--accent-red); } .text-blue { color: var(--accent-blue); }
+
+  /* Componentes UI */
+  .bg-surface { background-color: var(--bg-surface); } .bg-elevated { background-color: var(--bg-elevated); }
+  .border { border: 1px solid var(--border); } .border-t { border-top: 1px solid var(--border); } .border-b { border-bottom: 1px solid var(--border); }
+  .rounded { border-radius: 0.25rem; } .rounded-lg { border-radius: 0.5rem; } .rounded-xl { border-radius: 0.75rem; } .rounded-2xl { border-radius: 1rem; } .rounded-full { border-radius: 9999px; }
+  .shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+  
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 500; cursor: pointer; transition: all 0.2s; border: none; font-size: 0.875rem; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-emerald { background-color: var(--accent-emerald-hover); color: white; } .btn-emerald:hover:not(:disabled) { background-color: var(--accent-emerald); }
+  .btn-amber { background-color: #d97706; color: white; } .btn-amber:hover:not(:disabled) { background-color: var(--accent-amber); }
+  .btn-outline { background-color: transparent; border: 1px solid var(--border); color: var(--text-muted); } .btn-outline:hover:not(:disabled) { background-color: var(--bg-elevated); color: white; }
+  .btn-danger { background-color: rgba(239, 68, 68, 0.2); color: var(--accent-red); } .btn-danger:hover:not(:disabled) { background-color: rgba(239, 68, 68, 0.4); }
+  .btn-ghost { background: transparent; color: var(--text-muted); padding: 0.25rem 0.5rem; } .btn-ghost:hover { color: var(--accent-red); }
+
+  .input-field { width: 100%; background-color: var(--bg-base); border: 1px solid var(--border); color: white; padding: 0.5rem 0.75rem; border-radius: 0.5rem; outline: none; transition: border-color 0.2s; }
+  .input-field:focus { border-color: var(--accent-emerald); }
+  .input-label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem; }
+
+  /* Estrutura Principal */
+  #app { width: 100%; height: 100%; display: flex; }
+  .sidebar { width: 260px; background-color: var(--bg-surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+  .main-content { flex: 1; overflow-y: auto; padding: 2rem; }
+  .nav-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-radius: 0.75rem; color: var(--text-muted); cursor: pointer; transition: all 0.2s; background: transparent; border: none; width: 100%; text-align: left; font-size: 0.875rem; margin-bottom: 0.25rem; }
+  .nav-item:hover { background-color: var(--bg-elevated); color: white; }
+  .nav-item.active { background-color: rgba(16, 185, 129, 0.1); color: var(--accent-emerald); font-weight: 500; }
+  
+  .badge { padding: 0.125rem 0.5rem; border-radius: 9999px; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; }
+  .badge-emerald { background-color: rgba(16, 185, 129, 0.1); color: var(--accent-emerald); }
+  .badge-amber { background-color: rgba(245, 158, 11, 0.1); color: var(--accent-amber); }
+  .badge-red { background-color: rgba(239, 68, 68, 0.1); color: var(--accent-red); }
+  .badge-blue { background-color: rgba(59, 130, 246, 0.1); color: var(--accent-blue); }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 1rem; text-align: left; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); background-color: rgba(0,0,0,0.2); }
+  td { padding: 1rem; font-size: 0.875rem; border-bottom: 1px solid rgba(51, 65, 85, 0.5); }
+  tr:hover td { background-color: rgba(30, 41, 59, 0.3); }
+
+  /* Animações e Scrollbar */
+  .fade-in { animation: fadeIn 0.3s ease-in-out; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  ::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-track { background: var(--bg-base); } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; } ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+  
+  .pulse-dot { width: 8px; height: 8px; background-color: var(--accent-emerald); border-radius: 50%; display: inline-block; animation: pulse 2s infinite; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+
+  .task-card { position: relative; overflow: hidden; }
+  .task-indicator { position: absolute; top: 0; left: 0; width: 4px; height: 100%; }
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+  // --- ÍCONES SVG (Alta Fidelidade) ---
+  const Icons = {
+    shield: `<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-emerald"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>`,
+    lock: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`,
+    dashboard: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg>`,
+    megaphone: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l18-5v12L3 14v-3z"></path><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path></svg>`,
+    checkSquare: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>`,
+    fingerprint: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12C2 6.48 6.48 2 12 2s10 4.48 10 10"></path><path d="M5 12c0-3.87 3.13-7 7-7s7 3.13 7 7"></path><path d="M8 12c0-2.21 1.79-4 4-4s4 1.79 4 4"></path><path d="M11 12c0-.55.45-1 1-1s1 .45 1 1"></path></svg>`,
+    calendarRange: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><path d="M8 14h.01"></path><path d="M12 14h.01"></path><path d="M16 14h.01"></path></svg>`,
+    users: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`,
+    database: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>`,
+    logout: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>`,
+    clock: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`,
+    activity: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>`,
+    bell: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`,
+    plus: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`,
+    trash: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`,
+    userPlus: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>`,
+    download: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`,
+    upload: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>`,
+    alert: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`,
+    check: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>`
+  };
+
+  // --- MOTOR DE DADOS OFFLINE (LocalStorage) ---
+  const sysSetup = {
+    users: [{ id: '1', name: 'Administrador de Sistema', role: 'Admin', department: 'Diretoria', position: 'Gestor de Dados', active: true }],
+    tasks: [], announcements: [], attendance: [], leaves: []
+  };
+
+  function loadData(key, def) {
+    try { const res = localStorage.getItem(key); return res ? JSON.parse(res) : def; } 
+    catch(e) { return def; }
+  }
+  function saveData(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
+  }
+
+  // Estado Global
+  const state = {
+    users: loadData('afrokodica_offline_users', sysSetup.users),
+    tasks: loadData('afrokodica_offline_tasks', sysSetup.tasks),
+    announcements: loadData('afrokodica_offline_announcements', sysSetup.announcements),
+    attendance: loadData('afrokodica_offline_attendance', sysSetup.attendance),
+    leaves: loadData('afrokodica_offline_leaves', sysSetup.leaves),
+    currentUser: null,
+    activeTab: 'dashboard',
+    filterTasks: 'Todas',
+    filterAttDate: new Date().toISOString().split('T')[0],
+    isAddingTask: false,
+    isAddingAnn: false,
+    isAddingLeave: false,
+    isAddingUser: false
+  };
+
+  function updateState(key, val, saveKey) {
+    state[key] = val;
+    if(saveKey) saveData(saveKey, val);
+    renderApp();
+  }
+
+  // --- CONTROLADORES DE AÇÃO GLOBAIS ---
+  window.kdx = {
+    login: (e) => {
+      e.preventDefault();
+      const id = document.getElementById('loginSelect').value;
+      if(!id) return;
+      state.currentUser = state.users.find(u => u.id === id);
+      state.activeTab = 'dashboard';
+      renderApp();
+    },
+    logout: () => { state.currentUser = null; renderApp(); },
+    nav: (tab) => { state.activeTab = tab; resetForms(); renderApp(); },
+    
+    // Tarefas
+    toggleFormTask: () => { state.isAddingTask = !state.isAddingTask; renderApp(); },
+    setTaskFilter: (f) => { state.filterTasks = f; renderApp(); },
+    addTask: (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const newTask = { id: Date.now().toString(), title: fd.get('title'), description: fd.get('desc'), priority: fd.get('priority'), assignedTo: fd.get('assigned'), status: 'Pendente', createdBy: state.currentUser.id, createdAt: new Date().toISOString() };
+      updateState('tasks', [...state.tasks, newTask], 'afrokodica_offline_tasks');
+      state.isAddingTask = false; renderApp();
+    },
+    delTask: (id) => { if(confirm('Eliminar permanentemente este registo?')) updateState('tasks', state.tasks.filter(t=>t.id!==id), 'afrokodica_offline_tasks'); },
+    toggleTaskStatus: (id) => {
+      const updated = state.tasks.map(t => t.id===id ? {...t, status: t.status==='Pendente'?'Concluída':'Pendente'} : t);
+      updateState('tasks', updated, 'afrokodica_offline_tasks');
+    },
+
+    // Mural
+    toggleFormAnn: () => { state.isAddingAnn = !state.isAddingAnn; renderApp(); },
+    addAnn: (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const newAnn = { id: Date.now().toString(), title: fd.get('title'), content: fd.get('content'), authorId: state.currentUser.id, authorName: state.currentUser.name, createdAt: new Date().toISOString() };
+      updateState('announcements', [newAnn, ...state.announcements], 'afrokodica_offline_announcements');
+      state.isAddingAnn = false; renderApp();
+    },
+    delAnn: (id) => { if(confirm('Remover comunicado?')) updateState('announcements', state.announcements.filter(a=>a.id!==id), 'afrokodica_offline_announcements'); },
+
+    // Assiduidade
+    checkIn: () => {
+      const today = new Date().toISOString().split('T')[0];
+      const time = new Date().toLocaleTimeString('pt-PT', { hour:'2-digit', minute:'2-digit' });
+      const rec = { id: Date.now().toString(), userId: state.currentUser.id, date: today, checkIn: time, checkOut: null };
+      updateState('attendance', [...state.attendance, rec], 'afrokodica_offline_attendance');
+    },
+    checkOut: () => {
+      const today = new Date().toISOString().split('T')[0];
+      const time = new Date().toLocaleTimeString('pt-PT', { hour:'2-digit', minute:'2-digit' });
+      const updated = state.attendance.map(a => (a.userId===state.currentUser.id && a.date===today && !a.checkOut) ? {...a, checkOut: time} : a);
+      updateState('attendance', updated, 'afrokodica_offline_attendance');
+    },
+    filterAtt: (e) => { state.filterAttDate = e.target.value; renderApp(); },
+
+    // Licenças
+    toggleFormLeave: () => { state.isAddingLeave = !state.isAddingLeave; renderApp(); },
+    addLeave: (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const req = { id: Date.now().toString(), userId: state.currentUser.id, type: fd.get('type'), reason: fd.get('reason'), startDate: fd.get('start'), endDate: fd.get('end'), status: 'Pendente', requestedAt: new Date().toISOString() };
+      updateState('leaves', [...state.leaves, req], 'afrokodica_offline_leaves');
+      state.isAddingLeave = false; renderApp();
+    },
+    updLeave: (id, st) => { updateState('leaves', state.leaves.map(l=>l.id===id?{...l,status:st}:l), 'afrokodica_offline_leaves'); },
+
+    // RH
+    toggleFormUser: () => { state.isAddingUser = !state.isAddingUser; renderApp(); },
+    addUser: (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const usr = { id: Date.now().toString(), name: fd.get('name'), position: fd.get('pos'), department: fd.get('dep'), role: fd.get('role'), active: true };
+      updateState('users', [...state.users, usr], 'afrokodica_offline_users');
+      state.isAddingUser = false; renderApp();
+    },
+    togUser: (id) => { updateState('users', state.users.map(u=>u.id===id?{...u,active:!u.active}:u), 'afrokodica_offline_users'); },
+
+    // Sistema
+    exportDB: () => {
+      const data = { users: state.users, tasks: state.tasks, announcements: state.announcements, attendance: state.attendance, leaves: state.leaves, timestamp: new Date().toISOString(), v: '2.0-Nativo' };
+      const str = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+      const a = document.createElement('a'); a.href = str; a.download = `KODEX_Backup_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+    },
+    importDB: (e) => {
+      const file = e.target.files[0]; if(!file) return;
+      if(!confirm("Atenção: Substituir todos os dados locais?")) { e.target.value = ''; return; }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const d = JSON.parse(ev.target.result);
+          if(d.users) updateState('users', d.users, 'afrokodica_offline_users');
+          if(d.tasks) updateState('tasks', d.tasks, 'afrokodica_offline_tasks');
+          if(d.announcements) updateState('announcements', d.announcements, 'afrokodica_offline_announcements');
+          if(d.attendance) updateState(
